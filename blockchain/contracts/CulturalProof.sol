@@ -23,10 +23,15 @@ contract CulturalProof is ERC721, Ownable {
 
     event StoryPreserved(
         uint256 indexed tokenId,
-        string storyId,
+        string indexed storyId,
         address indexed contributor,
         string ipfsHash
     );
+
+    error EmptyStoryId();
+    error EmptyIpfsHash();
+    error StoryAlreadyExists(string storyId);
+    error StoryNotFound();
 
     constructor() ERC721("Uhodari Cultural Proof", "UHODARI") Ownable(msg.sender) {}
 
@@ -36,10 +41,10 @@ contract CulturalProof is ERC721, Ownable {
         string memory language,
         string memory region,
         string memory ipfsHash
-    ) public returns (uint256) {
-        require(bytes(storyId).length > 0, "Story ID cannot be empty");
-        require(bytes(ipfsHash).length > 0, "IPFS hash cannot be empty");
-        require(!_storyExists[storyId], "Story already preserved");
+    ) external returns (uint256) {
+        if (bytes(storyId).length == 0) revert EmptyStoryId();
+        if (bytes(ipfsHash).length == 0) revert EmptyIpfsHash();
+        if (_storyExists[storyId]) revert StoryAlreadyExists(storyId);
 
         uint256 tokenId = _nextTokenId++;
         _safeMint(msg.sender, tokenId);
@@ -61,21 +66,21 @@ contract CulturalProof is ERC721, Ownable {
         return tokenId;
     }
 
-    function verifyStory(uint256 tokenId) public view returns (CulturalData memory) {
-        require(tokenId < _nextTokenId, "Story not found");
+    function verifyStory(uint256 tokenId) external view returns (CulturalData memory) {
+        if (tokenId >= _nextTokenId) revert StoryNotFound();
         return culturalData[tokenId];
     }
 
-    function getStoryByStoryId(string memory storyId) public view returns (CulturalData memory) {
-        require(_storyExists[storyId], "Story not found");
+    function getStoryByStoryId(string memory storyId) external view returns (CulturalData memory) {
+        if (!_storyExists[storyId]) revert StoryNotFound();
         return culturalData[storyToTokenId[storyId]];
     }
 
-    function storyAlreadyPreserved(string memory storyId) public view returns (bool) {
+    function storyAlreadyPreserved(string memory storyId) external view returns (bool) {
         return _storyExists[storyId];
     }
 
-    function totalStories() public view returns (uint256) {
+    function totalStories() external view returns (uint256) {
         return _nextTokenId;
     }
 }

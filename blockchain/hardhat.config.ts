@@ -1,11 +1,14 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import { defineConfig } from "hardhat/config";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const config: HardhatUserConfig = {
-  solidity: "0.8.25",
+export default defineConfig({
+  plugins: [hardhatToolboxMochaEthers],
+  solidity: {
+    version: "0.8.25",
+  },
   networks: {
     base_sepolia: {
       type: "http",
@@ -13,6 +16,4 @@ const config: HardhatUserConfig = {
       chainId: 84532,
     },
   },
-};
-
-export default config;
+});
