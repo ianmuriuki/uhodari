@@ -1,47 +1,18 @@
-# fastapi==0.104.1
-# uvicorn[standard]==0.24.0
-# sqlalchemy==2.0.23
-# python-jose[cryptography]==3.3.0
-# passlib[bcrypt]==1.7.4
-# python-multipart==0.0.6
-# transformers==4.36.0
-# torch==2.1.0
-# sentence-transformers==2.2.2
-# chromadb==0.4.18
-# web3==6.11.1
-# celery==5.3.4
-# redis==5.0.1
-# python-dotenv==1.0.0
-# httpx==0.25.1
-# aiofiles==23.2.1
-# Pillow==10.1.0
-
-# Core - Minimal
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
-
-# AI - Lightweight versions
-transformers==4.36.0
-torch --index-url https://download.pytorch.org/whl/cpu  # CPU only!
-sentence-transformers==2.2.2
-chromadb==0.4.18
-accelerate==0.25.0  # Memory optimization
-langchain==0.1.13
-langchain-groq==0.0.11
-langchain-core==0.1.30
-
-# Blockchain
-web3==6.11.1
-
-# Cache & Message Queue
-redis==5.0.1
-celery==5.3.4
-
-# Utils
 python-dotenv==1.0.0
 aiofiles==23.2.1
 pillow==10.1.0
+httpx==0.28.1
+psutil==7.2.2
+web3==7.15.0
+redis==7.4.0
+chromadb==1.5.7
+langchain==1.2.15
+langchain-core==1.2.29
+langchain-groq==1.1.2
+groq==0.37.1
