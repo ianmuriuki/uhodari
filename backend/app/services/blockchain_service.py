@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import json
 import os
 from web3 import Web3
@@ -141,3 +142,31 @@ class BlockchainService:
     def total_stories(self) -> int:
         """Returns total number of preserved stories on chain."""
         return self.contract.functions.totalStories().call()
+=======
+from web3 import Web3
+import json
+import os
+
+class BlockchainService:
+    def __init__(self):
+        self.w3 = Web3(Web3.HTTPProvider(os.getenv("BASE_RPC_URL")))
+        self.contract_address = os.getenv("CONTRACT_ADDRESS")
+        with open("blockchain/abi/CulturalProof.json") as f:
+            self.abi = json.load(f)
+        self.contract = self.w3.contract(address=self.contract_address, abi=self.abi)
+    
+    async def mint_proof(self, story_id: str, title: str, language: str, region: str, contributor_address: str):
+        """Mint NFT proof on Base chain"""
+        # ****** (Implementation: build transaction, sign, send)
+        return {
+            "tx_hash": "0x...",
+            "token_id": "1",
+            "contract_address": self.contract_address,
+            "metadata_uri": f"ipfs://Qm{story_id}"
+        }
+    
+    async def verify_proof(self, token_id: str):
+        """Verify story proof on blockchain"""
+        # ****** (Implementation: call contract verifyStory function)
+        return {"verified": True, "data": {}}
+>>>>>>> Stashed changes

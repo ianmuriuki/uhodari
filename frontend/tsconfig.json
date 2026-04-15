@@ -9,7 +9,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "baseUrl": "src"
   },
   "include": ["src"]
