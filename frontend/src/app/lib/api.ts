@@ -212,11 +212,12 @@ const MOCK_STATS: Stats = {
 };
 
 export interface Story {
-  id: string;
+  id: number | string;
   title: string;
   description: string;
   language: string;
   region: string;
+  category?: string;
   media_url?: string;
   media_type?: string;
   transcription?: string;
@@ -226,6 +227,12 @@ export interface Story {
   creator?: string;
   tags?: string[];
   image_url?: string;
+  blockchain_proof?: {
+    tx_hash: string;
+    token_id: string;
+    contract_address: string;
+    explorer_url: string;
+  };
 }
 
 export interface Stats {

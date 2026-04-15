@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import json
 import os
 from web3 import Web3
@@ -7,8 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# this service handles all interactions with the Base Sepolia blockchain, including minting and verifying cultural proof NFTs.
-# It uses web3.py to connect to the blockchain and interact with the smart contract.
 class BlockchainService:
     def __init__(self):
         rpc_url = os.getenv("BASE_SEPOLIA_RPC_URL")
@@ -29,10 +26,7 @@ class BlockchainService:
 
         self.account = self.w3.eth.account.from_key(private_key)
 
-        abi_path = os.path.join(
-            os.path.dirname(__file__),
-            "/home/iann/mYprojecTs/uhodari/blockchain/abi/CulturalProof.json"
-        )
+        abi_path = "/home/iann/mYprojecTs/uhodari/blockchain/abi/CulturalProof.json"
 
         with open(abi_path) as f:
             contract_json = json.load(f)
@@ -44,7 +38,6 @@ class BlockchainService:
         )
 
     def _send_transaction(self, fn):
-        """Build, sign and send a transaction. Returns receipt."""
         tx = fn.build_transaction({
             "from": self.account.address,
             "nonce": self.w3.eth.get_transaction_count(self.account.address),
@@ -56,29 +49,13 @@ class BlockchainService:
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
         return receipt
 
-    def mint_proof(
-        self,
-        story_id: str,
-        title: str,
-        language: str,
-        region: str,
-        ipfs_hash: str
-    ) -> dict:
-        """
-        Mint a cultural proof NFT on Base Sepolia.
-        Call this after uploading the story file to IPFS.
-        Returns tx_hash, token_id, contract_address.
-        """
+    def mint_proof(self, story_id: str, title: str, language: str, region: str, ipfs_hash: str) -> dict:
         already_exists = self.contract.functions.storyAlreadyPreserved(story_id).call()
         if already_exists:
             raise ValueError(f"Story {story_id} is already preserved on chain")
 
         fn = self.contract.functions.preserveStory(
-            story_id,
-            title,
-            language,
-            region,
-            ipfs_hash
+            story_id, title, language, region, ipfs_hash
         )
 
         try:
@@ -100,10 +77,6 @@ class BlockchainService:
         }
 
     def verify_proof(self, token_id: int) -> dict:
-        """
-        Fetch story data from chain by token ID.
-        Returns full CulturalData struct.
-        """
         try:
             data = self.contract.functions.verifyStory(token_id).call()
         except ContractLogicError:
@@ -120,9 +93,6 @@ class BlockchainService:
         }
 
     def get_story_by_id(self, story_id: str) -> dict:
-        """
-        Fetch story data from chain by backend story UUID.
-        """
         exists = self.contract.functions.storyAlreadyPreserved(story_id).call()
         if not exists:
             raise ValueError(f"Story {story_id} not found on chain")
@@ -140,33 +110,4 @@ class BlockchainService:
         }
 
     def total_stories(self) -> int:
-        """Returns total number of preserved stories on chain."""
         return self.contract.functions.totalStories().call()
-=======
-from web3 import Web3
-import json
-import os
-
-class BlockchainService:
-    def __init__(self):
-        self.w3 = Web3(Web3.HTTPProvider(os.getenv("BASE_RPC_URL")))
-        self.contract_address = os.getenv("CONTRACT_ADDRESS")
-        with open("blockchain/abi/CulturalProof.json") as f:
-            self.abi = json.load(f)
-        self.contract = self.w3.contract(address=self.contract_address, abi=self.abi)
-    
-    async def mint_proof(self, story_id: str, title: str, language: str, region: str, contributor_address: str):
-        """Mint NFT proof on Base chain"""
-        # ****** (Implementation: build transaction, sign, send)
-        return {
-            "tx_hash": "0x...",
-            "token_id": "1",
-            "contract_address": self.contract_address,
-            "metadata_uri": f"ipfs://Qm{story_id}"
-        }
-    
-    async def verify_proof(self, token_id: str):
-        """Verify story proof on blockchain"""
-        # ****** (Implementation: call contract verifyStory function)
-        return {"verified": True, "data": {}}
->>>>>>> Stashed changes

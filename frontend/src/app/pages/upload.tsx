@@ -75,6 +75,7 @@ export function Upload() {
       data.append("description", formData.description);
       data.append("language", formData.language);
       data.append("region", formData.region);
+      data.append("category", "Folktale");
       if (formData.creator) data.append("creator", formData.creator);
       if (formData.tags) data.append("tags", formData.tags);
 

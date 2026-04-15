@@ -1,14 +1,28 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Search, Filter, Calendar, MapPin, Languages, Loader2, Play, FileText } from "lucide-react";
+import { Search, Loader2, Play, ArrowRight } from "lucide-react";
 import { getStories, Story } from "../lib/api";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+
+const COVER_IMAGES: Record<string, string> = {
+  Swahili: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=80",
+  Kikuyu: "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80",
+  Luo: "https://images.unsplash.com/photo-1504432842672-1a79f78e4084?w=600&q=80",
+  Kamba: "https://images.unsplash.com/photo-1489493887464-892be6d1daae?w=600&q=80",
+  Kalenjin: "https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80",
+  Maasai: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=600&q=80",
+  Luhya: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=600&q=80",
+  English: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80",
+  default: "https://images.unsplash.com/photo-1551009175-8a68da93d5f9?w=600&q=80",
+};
+
+function getCoverImage(story: Story): string {
+  if (story.image_url) return story.image_url;
+  return COVER_IMAGES[story.language] || COVER_IMAGES.default;
+}
 
 export function Stories() {
   const [stories, setStories] = useState<Story[]>([]);
@@ -47,25 +61,18 @@ export function Stories() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
-  const getMediaIcon = (mediaType?: string) => {
-    if (!mediaType) return FileText;
-    if (mediaType.startsWith("audio/")) return Play;
-    if (mediaType.startsWith("video/")) return Play;
-    return FileText;
-  };
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center"
+        className="text-center py-4"
       >
         <h1 className="text-4xl font-bold mb-4">Cultural Stories</h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Explore preserved stories, traditions, and languages from communities across Kenya,
-          Africa, and the world
+          Explore preserved stories, traditions, and languages from communities across
+          Kenya, Africa, and the world
         </p>
       </motion.div>
 
@@ -74,75 +81,50 @@ export function Stories() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="grid gap-4 md:grid-cols-3"
       >
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search stories..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Language Filter */}
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Languages className="h-4 w-4" />
-                    <SelectValue placeholder="All Languages" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Languages</SelectItem>
-                  <SelectItem value="Swahili">Swahili</SelectItem>
-                  <SelectItem value="Kikuyu">Kikuyu</SelectItem>
-                  <SelectItem value="Luo">Luo</SelectItem>
-                  <SelectItem value="Kamba">Kamba</SelectItem>
-                  <SelectItem value="Kalenjin">Kalenjin</SelectItem>
-                  <SelectItem value="English">English</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Region Filter */}
-              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <SelectValue placeholder="All Regions" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Regions</SelectItem>
-                  <SelectItem value="Nairobi">Nairobi</SelectItem>
-                  <SelectItem value="Central Kenya">Central Kenya</SelectItem>
-                  <SelectItem value="Coast">Coast</SelectItem>
-                  <SelectItem value="Nyanza">Nyanza</SelectItem>
-                  <SelectItem value="Rift Valley">Rift Valley</SelectItem>
-                  <SelectItem value="Western">Western</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search stories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+          <SelectTrigger><SelectValue placeholder="All Languages" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Languages</SelectItem>
+            <SelectItem value="Swahili">Swahili</SelectItem>
+            <SelectItem value="Kikuyu">Kikuyu</SelectItem>
+            <SelectItem value="Luo">Luo</SelectItem>
+            <SelectItem value="Kamba">Kamba</SelectItem>
+            <SelectItem value="Kalenjin">Kalenjin</SelectItem>
+            <SelectItem value="English">English</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+          <SelectTrigger><SelectValue placeholder="All Regions" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Regions</SelectItem>
+            <SelectItem value="Nairobi">Nairobi</SelectItem>
+            <SelectItem value="Central Kenya">Central Kenya</SelectItem>
+            <SelectItem value="Coast">Coast</SelectItem>
+            <SelectItem value="Nyanza">Nyanza</SelectItem>
+            <SelectItem value="Rift Valley">Rift Valley</SelectItem>
+            <SelectItem value="Western">Western</SelectItem>
+          </SelectContent>
+        </Select>
       </motion.div>
 
-      {/* Stories Grid */}
+      {/* Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filteredStories.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-20"
-        >
-          <Filter className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
           <h3 className="text-xl font-semibold mb-2">No stories found</h3>
           <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
         </motion.div>
@@ -154,7 +136,9 @@ export function Stories() {
           className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
         >
           {filteredStories.map((story, index) => {
-            const MediaIcon = getMediaIcon(story.media_type);
+            const isVideo = story.media_type?.startsWith("video/");
+            const coverImage = getCoverImage(story);
+
             return (
               <motion.div
                 key={story.id}
@@ -164,80 +148,85 @@ export function Stories() {
               >
                 <Link to={`/stories/${story.id}`}>
                   <motion.div
-                    whileHover={{ y: -4 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: "spring", stiffness: 280 }}
+                    className="group h-full rounded-2xl overflow-hidden cursor-pointer flex flex-col"
+                    style={{ backgroundColor: "#EFEFEA" }}
                   >
-                    <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50">
-                      {story.image_url ? (
-                        <div className="relative w-full h-48 bg-muted overflow-hidden">
-                          <ImageWithFallback
-                            src={story.image_url}
-                            alt={story.title}
-                            className="w-full h-full object-cover"
-                          />
-                          {story.media_type && (
-                            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                              <MediaIcon className="h-4 w-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                      ) : story.media_url && story.media_type?.startsWith("video/") ? (
-                        <div className="relative w-full h-48 bg-muted overflow-hidden">
-                          <ImageWithFallback
-                            src="https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&q=80"
-                            alt={story.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center">
-                              <Play className="h-6 w-6 text-primary-foreground ml-0.5" />
-                            </div>
+                    {/* Cover Image */}
+                    <div className="relative w-full overflow-hidden" style={{ height: "220px" }}>
+                      <img
+                        src={coverImage}
+                        alt={story.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = COVER_IMAGES.default;
+                        }}
+                      />
+                      {/* Overlay always present, stronger on hover */}
+                      <div
+                        className="absolute inset-0 transition-opacity duration-300"
+                        style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
+                      />
+
+                      {/* Video play button */}
+                      {isVideo && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div
+                            className="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
+                            style={{ backgroundColor: "rgba(255,255,255,0.9)" }}
+                          >
+                            <Play className="h-6 w-6 ml-1" style={{ color: "#2D5016" }} />
                           </div>
                         </div>
-                      ) : null}
-                      <CardHeader>
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <CardTitle className="line-clamp-2">{story.title}</CardTitle>
-                          <MediaIcon className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
+
+                      {/* Language tag on image */}
+                      <div className="absolute top-3 left-3">
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full text-white"
+                          style={{ backgroundColor: "rgba(45,80,22,0.9)" }}
+                        >
+                          {story.language}
+                        </span>
+                      </div>
+
+                      {/* Category tag */}
+                      {story.category && (
+                        <div className="absolute top-3 right-3">
+                          <span
+                            className="text-xs px-2.5 py-1 rounded-full font-medium"
+                            style={{ backgroundColor: "rgba(255,255,255,0.85)", color: "#1A1A1A" }}
+                          >
+                            {story.category}
+                          </span>
                         </div>
-                        <CardDescription className="line-clamp-3">
-                          {story.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary" className="gap-1">
-                              <Languages className="h-3 w-3" />
-                              {story.language}
-                            </Badge>
-                            <Badge variant="outline" className="gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {story.region}
-                            </Badge>
-                          </div>
-                          {story.tags && story.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {story.tags.slice(0, 3).map((tag) => (
-                                <Badge key={tag} variant="outline" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(story.created_at)}
-                            {story.creator && (
-                              <>
-                                <span>•</span>
-                                <span className="truncate">{story.creator}</span>
-                              </>
-                            )}
-                          </div>
+                      )}
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-6 flex flex-col flex-1">
+                      <h3 className="font-bold text-base text-foreground mb-2 line-clamp-2 leading-snug">
+                        {story.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed flex-1">
+                        {story.summary && !story.summary.startsWith("API Error") ? story.summary : story.description}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-auto pt-4" style={{ borderTop: "1px solid #E0DDD6" }}>
+                        <div>
+                          <p className="text-xs text-muted-foreground">{story.region}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{formatDate(story.created_at)}</p>
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div
+                          className="flex items-center gap-1.5 text-xs font-semibold transition-colors group-hover:gap-2.5"
+                          style={{ color: "#2D5016" }}
+                        >
+                          Explore Story
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
                 </Link>
               </motion.div>
@@ -246,16 +235,9 @@ export function Stories() {
         </motion.div>
       )}
 
-      {/* Load More */}
       {!loading && filteredStories.length > 0 && filteredStories.length % 20 === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <Button variant="outline" onClick={loadStories}>
-            Load More Stories
-          </Button>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+          <Button variant="outline" onClick={loadStories}>Load More Stories</Button>
         </motion.div>
       )}
     </div>

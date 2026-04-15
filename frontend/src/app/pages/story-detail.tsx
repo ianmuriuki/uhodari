@@ -211,10 +211,7 @@ export function StoryDetail() {
       >
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Description
-            </CardTitle>
+            <CardTitle>Description</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg leading-relaxed">{story.description}</p>
@@ -231,10 +228,7 @@ export function StoryDetail() {
         >
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                AI Processing Results
-              </CardTitle>
+              <CardTitle>AI Processing Results</CardTitle>
               <CardDescription>
                 Automatically generated transcription, translation, and summary
               </CardDescription>
@@ -246,10 +240,7 @@ export function StoryDetail() {
                     <TabsTrigger value="transcription">Transcription</TabsTrigger>
                   )}
                   {story.translation && (
-                    <TabsTrigger value="translation">
-                      <Globe className="h-4 w-4 mr-2" />
-                      Translation
-                    </TabsTrigger>
+                    <TabsTrigger value="translation">Translation</TabsTrigger>
                   )}
                   {story.summary && <TabsTrigger value="summary">Summary</TabsTrigger>}
                 </TabsList>
@@ -288,11 +279,7 @@ export function StoryDetail() {
       >
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <div>
+            <div>
                 <h4 className="font-semibold mb-1">Blockchain Protected</h4>
                 <p className="text-sm text-muted-foreground">
                   This story's origin and creator rights are permanently recorded on the blockchain,
@@ -300,7 +287,6 @@ export function StoryDetail() {
                   preserved for future generations.
                 </p>
               </div>
-            </div>
           </CardContent>
         </Card>
       </motion.div>
@@ -318,10 +304,7 @@ export function StoryDetail() {
           </Button>
         </Link>
         <Link to="/chat" className="flex-1">
-          <Button className="w-full gap-2">
-            <Sparkles className="h-4 w-4" />
-            Ask AI Historian
-          </Button>
+          <Button className="w-full">Ask AI Historian</Button>
         </Link>
       </motion.div>
     </div>
