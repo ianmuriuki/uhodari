@@ -30,9 +30,16 @@ torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu  # CPU only!
 sentence-transformers==2.2.2
 chromadb==0.4.18
 accelerate==0.25.0  # Memory optimization
+langchain==0.1.13
+langchain-groq==0.0.11
+langchain-core==0.1.30
 
 # Blockchain
 web3==6.11.1
+
+# Cache & Message Queue
+redis==5.0.1
+celery==5.3.4
 
 # Utils
 python-dotenv==1.0.0

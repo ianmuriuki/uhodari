@@ -288,9 +288,19 @@ export async function getStories(
       throw new Error("Failed to fetch stories");
     }
     
-    return response.json();
+    const data = await response.json();
+    // Handle both direct array response and paginated response format
+    const stories = Array.isArray(data) ? data : (data.stories || []);
+    
+    // Only return backend data if we got valid results
+    if (stories && stories.length > 0) {
+      return stories;
+    }
+    // fall back to mock data if backend returns empty results
+    throw new Error("No stories returned from backend");
   } catch (error) {
-    // Return mock data when API is unavailable
+    console.log("Backend unavailable, using mock data:", error);
+    // Always return mock data when API is unavailable or returns no data
     let filtered = [...MOCK_STORIES];
     if (language) {
       filtered = filtered.filter(s => s.language === language);
@@ -348,7 +358,7 @@ export async function sendChatMessage(
       },
       body: JSON.stringify({
         message,
-        history,
+        conversation_id: "default",
       }),
     });
     
@@ -357,7 +367,7 @@ export async function sendChatMessage(
     }
     
     const data = await response.json();
-    return data.response;
+    return data.content;
   } catch (error) {
     // Return mock AI responses
     const lowerMessage = message.toLowerCase();

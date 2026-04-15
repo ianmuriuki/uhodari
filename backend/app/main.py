@@ -302,11 +302,20 @@ from typing import Optional
 import os
 import uuid
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from app.config import Config
 from app.database import engine, get_db, Base
 from app.models import User, Story, Transcript, Translation, BlockchainProof
 from app.cloud_ai_service import cloud_ai
+from app.services.chat_service import (
+    process_chat_message,
+    clear_memory,
+    get_conversation_summary
+)
 
 # Create tables
 print("📦 Creating database tables...")
@@ -492,6 +501,7 @@ async def get_stories(
 @app.get("/api/stories/{story_id}")
 async def get_story(story_id: int, db: Session = Depends(get_db)):
     """Get single story details"""
+    print("Hello, uploading")
     story = db.query(Story).filter(Story.id == story_id).first()
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
@@ -530,26 +540,49 @@ async def get_media(filename: str):
 # ============ CHAT ============
 @app.post("/api/chat")
 async def chat(request: dict, db: Session = Depends(get_db)):
-    """Chat with digital historian"""
-    query = request.get("message", "")
+    """
+    Chat with the Digital Historian
     
-    if not query:
-        raise HTTPException(status_code=400, detail="Message required")
-    
-    # Get recent stories for context
-    recent_stories = db.query(Story).filter(
-        Story.is_public == True,
-        Story.transcription_status == "completed"
-    ).limit(3).all()
-    
-    context = "\n".join([f"{s.title}: {s.summary or s.description}" for s in recent_stories if s.summary or s.description])
-    
-    response = await cloud_ai.chat_response(query, context)
-    
-    return {
-        "response": response,
-        "query": query
+    Request body:
+    {
+        "message": "Your question here",
+        "conversation_id": "unique-id-per-conversation",
+        "page": "stories",  # Optional: current page
+        "selectedText": "any selected text"  # Optional
     }
+    """
+    message = request.get("message", "").strip()
+    conversation_id = request.get("conversation_id", "default")
+    page = request.get("page", "unknown")
+    selected_text = request.get("selectedText", "")
+    
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+    
+    # Process chat message through service
+    response = await process_chat_message(
+        message=message,
+        conversation_id=conversation_id,
+        page=page,
+        selected_text=selected_text
+    )
+    
+    return response
+
+
+@app.post("/api/chat/clear")
+async def clear_chat_memory(request: dict):
+    """Clear conversation history"""
+    conversation_id = request.get("conversation_id", "default")
+    clear_memory(conversation_id)
+    return {"status": "success", "message": "Conversation cleared"}
+
+
+@app.get("/api/chat/summary/{conversation_id}")
+async def chat_summary(conversation_id: str):
+    """Get conversation metadata and summary"""
+    summary = get_conversation_summary(conversation_id)
+    return summary
 
 # ============ STATS ============
 @app.get("/api/stats")

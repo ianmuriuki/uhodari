@@ -1,0 +1,383 @@
+# 🏗️ Uhodari Chat System Architecture
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     FRONTEND (React)                             │
+│ ┌───────────────────────────────────────────────────────────┐   │
+│ │  Chat Component (src/pages/chat.tsx)                      │   │
+│ │  - User types message                                     │   │
+│ │  - Calls sendChatMessage() from api.ts                    │   │
+│ └───────────┬───────────────────────────────────────────┬───┘   │
+│             │ HTTP POST /api/chat                        │       │
+│             └────────────────────────────────────────────┘       │
+└────────────────────────────┬──────────────────────────────────┘
+                             │
+                ┌────────────▼────────────┐
+                │   NETWORK REQUEST       │
+                │  (JSON over HTTPS)      │
+                └────────────┬────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────────┐
+│                    FASTAPI BACKEND                            │
+├────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌─────────────────────────────────────────┐               │
+│  │  Chat Endpoint: POST /api/chat           │               │
+│  │  Route Handler in main.py                │               │
+│  └────────────┬──────────────────────────┬─┘               │
+│               │ Validate Input           │                  │
+│               └────────────┬─────────────┘                  │
+│                            │                                 │
+│  ┌─────────────────────────▼──────────────────────────┐    │
+│  │  Chat Service: process_chat_message()               │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 1. COMMUNITY DETECTION                │           │    │
+│  │  │    detect_community(message)           │           │    │
+│  │  │    └─→ Checks if message mentions:    │           │    │
+│  │  │        • Kikuyu, Maasai, Luo, etc.   │           │    │
+│  │  │        • Stores in Redis key:         │           │    │
+│  │  │          community:{conversation_id} │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 2. RETRIEVE CONVERSATION MEMORY       │           │    │
+│  │  │    get_memory(conversation_id)        │           │    │
+│  │  │    └─→ Query Redis:                  │           │    │
+│  │  │        KEY: chat:{conversation_id}   │           │    │
+│  │  │        Gets last 20 messages          │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 3. VECTOR CONTEXT RETRIEVAL           │           │    │
+│  │  │    get_vector_context(query)          │           │    │
+│  │  │    └─→ (Optional: Search ChromaDB)   │           │    │
+│  │  │        Find similar stories          │           │    │
+│  │  │        (Placeholder for now)          │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 4. BUILD SYSTEM PROMPT                │           │    │
+│  │  │    build_system_prompt():             │           │    │
+│  │  │    └─→ Combines:                      │           │    │
+│  │  │        • Uhodari context              │           │    │
+│  │  │        • Current community            │           │    │
+│  │  │        • Story context                │           │    │
+│  │  │        • Conversation history         │           │    │
+│  │  │        • Cultural guidelines          │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 5. CALL LLM                           │           │    │
+│  │  │    llm.invoke(messages)                │           │    │
+│  │  │    └─→ Groq API Call:                │           │    │
+│  │  │        Model: mixtral-8x7b            │           │    │
+│  │  │        Headers: Authorization         │           │    │
+│  │  │        Body: [system, human] prompts  │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 6. SAVE TO MEMORY                     │           │    │
+│  │  │    save_message(conversation_id)      │           │    │
+│  │  │    └─→ Push to Redis:                │           │    │
+│  │  │        • User message                 │           │    │
+│  │  │        • AI response                  │           │    │
+│  │  │        • Set 7-day expiration         │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  │                                                      │    │
+│  │  ┌──────────────────────────────────────┐           │    │
+│  │  │ 7. RETURN RESPONSE                    │           │    │
+│  │  │    {type, content, community}         │           │    │
+│  │  └──────────────────────────────────────┘           │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                               │
+└───────────────┬──────────────────────┬──────────────────┬────┘
+                │                      │                  │
+       ┌────────▼─────────┐   ┌─────────▼──────┐  ┌──────▼──────┐
+       │ REDIS            │   │ GROQ API       │  │ SQL Database│
+       │ 127.0.0.1:6379   │   │ console.groq   │  │  (SQLite)   │
+       │                  │   │  .com/api      │  │             │
+       │ Data:            │   │                │  │ Data:       │
+       │ - chat:{id}      │   │ Model:         │  │ - Stories   │
+       │ - community:{id} │   │ mixtral-8x7b   │  │ - Metadata  │
+       │                  │   │                │  │             │
+       │ TTL: 7 days      │   │ Free Tier:     │  │ Optional    │
+       │ Operations:      │   │ 30 req/min     │  │             │
+       │ - rpush          │   │                │  │             │
+       │ - lrange         │   │ Rate Limit:    │  │             │
+       │ - set            │   │ Handled        │  │             │
+       │ - get            │   │                │  │             │
+       └──────────────────┘   └────────────────┘  └─────────────┘
+```
+
+---
+
+## Data Flow Diagram - Single Chat Message
+
+```
+USER INPUT
+   │
+   ▼
+"Tell me about Maasai culture"
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ MESSAGE ROUTING                          │
+│ POST /api/chat                           │
+│ Body: {message, conversation_id, page}  │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ COMMUNITY DETECTION                     │
+│ detect_community("Tell me about Maasai")│
+│ ✓ Found: "maasai"                       │
+└────────────┬────────────────────────────┘
+             │ ┌──────────────────────────────────┐
+             └─→ Store in Redis:                 │
+               community:user-123 = "maasai"     │
+                                                  │
+             ┌──────────────────────────────────┐
+             ▼──────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│ LOAD CONVERSATION HISTORY               │
+│ get_memory("user-123")                  │
+│ Redis LRANGE chat:user-123              │
+│ Result:                                 │
+│ [                                       │
+│   {"role": "human", "content": "..."},  │
+│   {"role": "ai", "content": "..."},     │
+│   {...}                                 │
+│ ]                                       │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ BUILD COMPLETE CONTEXT                  │
+│ - System: Uhodari historian role        │
+│ - Community: maasai                     │
+│ - History: Last 5 exchanges             │
+│ - Stories: Top matches (if available)   │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ LLM API CALL                            │
+│ POST https://api.groq.com/...           │
+│ Headers:                                │
+│   Authorization: Bearer {GROQ_API_KEY}  │
+│   Content-Type: application/json        │
+│                                         │
+│ Body:                                   │
+│ {                                       │
+│   "messages": [                         │
+│     {                                   │
+│       "role": "system",                 │
+│       "content": "You are a Digital..." │
+│     },                                  │
+│     {                                   │
+│       "role": "human",                  │
+│       "content": "Tell me about..."     │
+│     }                                   │
+│   ],                                    │
+│   "model": "mixtral-8x7b-32768",        │
+│   "temperature": 0.7                    │
+│ }                                       │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ LLM RESPONSE                            │
+│ "Maasai culture is rich with..."        │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ SAVE TO CONVERSATION MEMORY             │
+│ Redis RPUSH operations:                 │
+│ - Push user message                     │
+│ - Push AI response                      │
+│ - Trim to last 20 messages              │
+│ - Set 7-day expiration                  │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ FORMAT RESPONSE                         │
+│ {                                       │
+│   "type": "message",                    │
+│   "content": "Maasai culture is...",    │
+│   "community": "maasai",                │
+│   "conversation_id": "user-123",        │
+│   "has_context": false                  │
+│ }                                       │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ RETURN TO FRONTEND                      │
+│ HTTP 200 OK                             │
+│ Content-Type: application/json          │
+│ Body: Response JSON                     │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│ DISPLAY IN UI                           │
+│ Chat bubble: "Maasai culture is..."     │
+│ User can continue conversation          │
+│ (history is remembered)                 │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Service Dependencies
+
+```
+chat_service.py
+├─ Imports
+│  ├─ json (stdlib)
+│  ├─ re (stdlib)
+│  ├─ redis (pip: redis==5.0.1)
+│  └─ langchain_groq (pip: langchain-groq==0.0.11)
+│     └─ Requires: GROQ_API_KEY env var
+│
+├─ Functions
+│  ├─ Redis Operations
+│  │  ├─ save_message()
+│  │  ├─ get_memory()
+│  │  ├─ set_active_community()
+│  │  └─ get_active_community()
+│  │
+│  ├─ Chat Processing
+│  │  ├─ detect_community()
+│  │  ├─ get_vector_context()
+│  │  ├─ build_system_prompt()
+│  │  └─ process_chat_message()
+│  │
+│  └─ Utilities
+│     └─ get_conversation_summary()
+│
+└─ External Services
+   ├─ Redis (localhost:6379)
+   ├─ Groq API (api.groq.com)
+   └─ Optional: ChromaDB, Weaviate
+```
+
+---
+
+## Memory Structure in Redis
+
+```
+REDIS DATA FOR CONVERSATION ID = "user-123"
+
+KEY: chat:user-123
+VALUE: [
+  {
+    "role": "human",
+    "content": "Tell me about Kikuyu traditions"
+  },
+  {
+    "role": "ai",
+    "content": "Kikuyu traditions are deeply rooted in..."
+  },
+  {
+    "role": "human",
+    "content": "What about Mount Kenya?"
+  },
+  {
+    "role": "ai",
+    "content": "Mount Kenya, known as Kirinyaga..."
+  }
+]
+TTL: 7 days (604800 seconds)
+MAX SIZE: Last 20 messages (oldest trimmed)
+
+---
+
+KEY: community:user-123
+VALUE: "kikuyu"
+TTL: 7 days
+```
+
+---
+
+## Configuration Files Locations
+
+```
+uhodari/
+├── backend/
+│   ├── .env                    ← Environment variables (CREATED BY YOU)
+│   ├── .env.example            ← Template (PROVIDED)
+│   ├── requirements.txt         ← Dependencies (UPDATED)
+│   │
+│   └── app/
+│       ├── main.py             ← Chat endpoints (UPDATED)
+│       └── services/
+│           └── chat_service.py ← Chat logic (NEW)
+│
+├── IMPLEMENTATION_SUMMARY.md   ← Overview (NEW)
+├── CHAT_QUICK_START.md        ← Quick guide (NEW)
+└── CHAT_SETUP_GUIDE.md        ← Full guide (NEW)
+```
+
+---
+
+## Integration Points
+
+```
+Frontend Chat → API Call
+      │
+      ▼
+backend/app/main.py
+├─ /api/chat                    ✓ NEW
+├─ /api/chat/clear             ✓ NEW
+├─ /api/chat/summary/{id}      ✓ NEW
+├─ /api/stories                (existing)
+└─ Other endpoints...
+
+backend/app/services/chat_service.py
+├─ Redis Integration           ✓ NEW
+├─ LLM Integration            ✓ NEW
+├─ Community Detection        ✓ NEW
+└─ Conversation Memory        ✓ NEW
+```
+
+---
+
+## Scalability Path
+
+```
+Current (Local Development)
+├─ SQLite database
+├─ Redis (local)
+├─ Groq API (cloud)
+└─ Single backend process
+
+↓ Scale to Production
+
+Production (Ready to Scale)
+├─ PostgreSQL database
+├─ Redis Cluster (cloud)
+├─ Groq or OpenAI API
+├─ Multiple backend instances (load balanced)
+└─ Vector DB Cluster (Weaviate, Pinecone, etc.)
+```
+
+---
+
+## Success Indicators
+
+✅ Redis running and accepting connections  
+✅ GROQ_API_KEY configured  
+✅ Backend starts without import errors  
+✅ POST /api/chat returns 200  
+✅ Chat history saved in Redis  
+✅ Community auto-detected in responses  
+✅ Frontend receives and displays responses  
+✅ Follow-up questions remember context  
+
+You're ready! 🚀
