@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: uhodari-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./data/uhodari.db
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BASE_SEPOLIA_RPC_URL
+        sync: false
+      - key: CONTRACT_ADDRESS
+        value: 0xfA6e837E2714a7CFB55b5d4882D29b5039767674
+      - key: PRIVATE_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: GROQ_MODEL_NAME
+        value: llama-3.3-70b-versatile
